@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rumah DataKu - Kampung KB Jember</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; }
+        
+        /* Custom Colors sesuai permintaan */
+        .bg-bkkbn-blue { background-color: #005EB8; }
+        .text-bkkbn-blue { color: #005EB8; }
+        .bg-soft-pink { background-color: #FFF0F5; }
+        .bg-soft-blue { background-color: #E0F7FA; }
+        .accent-yellow { color: #FDB913; }
+        
+        .card { 
+            background: white; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+            transition: transform 0.3s ease;
+            border-top: 5px solid transparent;
+        }
+        .card:hover { transform: translateY(-5px); }
+        
+        /* Warna Border Card Variatif */
+        .card-pink { border-color: #EC4899; }
+        .card-blue { border-color: #005EB8; }
+        .card-yellow { border-color: #FDB913; }
+
+        /* Background Gradient Header */
+        .header-gradient {
+            background: rgb(0,94,184);
+            background: linear-gradient(135deg, rgba(0,94,184,1) 0%, rgba(236,72,153,1) 100%);
+        }
+
+        /* Loading Spinner */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #005EB8;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div>
+            <div class="loader"></div>
+            <p class="text-center mt-4 text-gray-600 font-semibold">Memuat data...</p>
+        </div>
+    </div>
+
+    <header class="header-gradient text-white shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center gap-4 mb-3 md:mb-0">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a3/Lambang-kabupaten-jember.png" alt="Pemkab Jember" class="h-12 md:h-14 bg-white rounded-full p-1 shadow-md">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Logo_Kementerian_Kependudukan_dan_Pembangunan_Keluarga_-_BKKBN_%282024%29.svg" alt="BKKBN" class="h-12 md:h-14 bg-white rounded-lg p-1 shadow-md">
+                    
+                    <div class="text-center md:text-left ml-2">
+                        <h1 class="text-lg md:text-2xl font-bold uppercase tracking-wide">Rumah Data Kependudukan</h1>
+                        <p class="text-xs md:text-sm font-medium text-yellow-200">Kampung Keluarga Berkualitas (Kampung KB - Desa Cumedak KECAMATAN SUMBERJAMBE</p>
+                    </div>
+                </div>
+
+                <nav class="flex flex-wrap justify-center gap-4 text-xs md:text-sm font-semibold">
+                    <a href="#kuantitas" class="bg-white/20 hover:bg-white/40 px-3 py-1 rounded-full transition">Kuantitas</a>
+                    <a href="#kualitas" class="bg-white/20 hover:bg-white/40 px-3 py-1 rounded-full transition">Kualitas</a>
+                    <a href="#kb" class="bg-white/20 hover:bg-white/40 px-3 py-1 rounded-full transition">KB & PUS</a>
+                    <a href="#pembangunan" class="bg-white/20 hover:bg-white/40 px-3 py-1 rounded-full transition">Pembangunan</a>
+                    <a href="#indikator" class="bg-white/20 hover:bg-white/40 px-3 py-1 rounded-full transition">Indikator Khusus</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+
+        <!-- Summary Cards -->
+        <section class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+            <div class="card card-blue p-6 bg-blue-50">
+                <p class="text-gray-500 text-sm font-semibold uppercase">Total Penduduk</p>
+                <h2 class="text-4xl font-bold text-blue-700"><span id="totalPenduduk">0</span> <span class="text-sm text-gray-600">Jiwa</span></h2>
+            </div>
+            <div class="card card-pink p-6 bg-pink-50">
+                <p class="text-gray-500 text-sm font-semibold uppercase">Kepala Keluarga</p>
+                <h2 class="text-4xl font-bold text-pink-600"><span id="totalKK">0</span> <span class="text-sm text-gray-600">KK</span></h2>
+            </div>
+            <div class="card card-yellow p-6 bg-yellow-50">
+                <p class="text-gray-500 text-sm font-semibold uppercase">Pasangan Usia Subur</p>
+                <h2 class="text-4xl font-bold text-yellow-600"><span id="totalPUS">0</span> <span class="text-sm text-gray-600">PUS</span></h2>
+            </div>
+            <div class="card card-blue p-6 border-red-500 bg-red-50">
+                <p class="text-red-500 text-sm font-semibold uppercase">Keluarga Berisiko Stunting</p>
+                <h2 class="text-4xl font-bold text-red-600"><span id="totalStunting">0</span> <span class="text-sm text-gray-600">Keluarga</span></h2>
+            </div>
+        </section>
+
+        <!-- Kuantitas Section -->
+        <section id="kuantitas" class="mb-16 scroll-mt-24">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-2 h-10 bg-blue-600 rounded"></div>
+                <h2 class="text-2xl font-bold text-gray-800">Data Kuantitas Penduduk</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="card p-6">
+                    <h3 class="font-bold text-gray-700 mb-4 text-center border-b pb-2">Komposisi Jenis Kelamin</h3>
+                    <div class="h-[300px] flex justify-center">
+                        <canvas id="genderChart"></canvas>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mt-4 text-center">
+                        <div class="bg-blue-100 p-2 rounded text-blue-800 font-bold">Laki-laki: <span id="lakiLaki">0</span></div>
+                        <div class="bg-pink-100 p-2 rounded text-pink-800 font-bold">Perempuan: <span id="perempuan">0</span></div>
+                    </div>
+                </div>
+
+                <div class="card p-6">
+                    <h3 class="font-bold text-gray-700 mb-4 text-center border-b pb-2">Kelompok Umur (Interval 5 Tahun)</h3>
+                    <div class="h-[300px]">
+                        <canvas id="ageChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Kualitas Section -->
+        <section id="kualitas" class="mb-16 scroll-mt-24">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-2 h-10 bg-pink-500 rounded"></div>
+                <h2 class="text-2xl font-bold text-gray-800">Data Kualitas Penduduk</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="card p-5 border-t-4 border-yellow-400">
+                    <h4 class="font-bold text-center text-gray-700 mb-4">Tingkat Pendidikan</h4>
+                    <div class="h-[200px] relative">
+                        <canvas id="eduChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card p-5 border-t-4 border-blue-500 col-span-1 md:col-span-2">
+                    <h4 class="font-bold text-center text-gray-700 mb-4">Jenis Pekerjaan Utama</h4>
+                    <div class="h-[250px]">
+                        <canvas id="jobChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6">
+                 <h4 class="font-bold text-gray-700 mb-3">Status Kesehatan (Jaminan Kesehatan)</h4>
+                 <div class="bg-white rounded-xl shadow p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="text-center w-full">
+                        <div class="text-3xl font-bold text-green-600"><span id="bpjsPercent">0</span>%</div>
+                        <div class="text-sm text-gray-500">Memiliki BPJS/KIS</div>
+                    </div>
+                    <div class="w-px h-12 bg-gray-200 hidden md:block"></div>
+                    <div class="text-center w-full">
+                        <div class="text-3xl font-bold text-orange-500"><span id="disabilitasPercent">0</span>%</div>
+                        <div class="text-sm text-gray-500">Disabilitas</div>
+                    </div>
+                    <div class="w-px h-12 bg-gray-200 hidden md:block"></div>
+                    <div class="text-center w-full">
+                        <div class="text-3xl font-bold text-blue-500"><span id="k4Percent">0</span>%</div>
+                        <div class="text-sm text-gray-500">Ibu Hamil K4 (Rutin Periksa)</div>
+                    </div>
+                 </div>
+            </div>
+        </section>
+
+        <!-- KB Section -->
+        <section id="kb" class="mb-16 scroll-mt-24 bg-blue-50/50 p-6 rounded-3xl border border-blue-100">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-2 h-10 bg-blue-700 rounded"></div>
+                <h2 class="text-2xl font-bold text-gray-800">Data Keluarga Berencana (KB)</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="card p-6">
+                    <h3 class="font-bold text-gray-700 mb-4 text-center border-b pb-2">Metode Kontrasepsi yang Digunakan</h3>
+                    <div class="h-[300px]">
+                        <canvas id="kbChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card p-6">
+                    <h3 class="font-bold text-gray-700 mb-4 text-center border-b pb-2">Kelompok Kegiatan (Poktan)</h3>
+                    <div class="h-[300px]">
+                        <canvas id="poktanChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white rounded-xl shadow p-5 text-center">
+                    <div class="text-3xl font-bold text-blue-600"><span id="totalAkseptorKB">0</span></div>
+                    <div class="text-sm text-gray-600 mt-1">Total Peserta KB Aktif</div>
+                </div>
+                <div class="bg-white rounded-xl shadow p-5 text-center">
+                    <div class="text-3xl font-bold text-green-600"><span id="cakupanKBPercent">0</span>%</div>
+                    <div class="text-sm text-gray-600 mt-1">Cakupan KB dari PUS</div>
+                </div>
+                <div class="bg-white rounded-xl shadow p-5 text-center">
+                    <div class="text-3xl font-bold text-purple-600"><span id="totalPoktan">0</span></div>
+                    <div class="text-sm text-gray-600 mt-1">Kelompok Kegiatan Aktif</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pembangunan Manusia -->
+        <section id="pembangunan" class="mb-16 scroll-mt-24">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-2 h-10 bg-purple-600 rounded"></div>
+                <h2 class="text-2xl font-bold text-gray-800">Pembangunan Keluarga & Manusia</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="card p-6 border-t-4 border-green-500">
+                    <h4 class="font-bold text-center text-gray-700 mb-4">Indeks Pembangunan Keluarga (IKK)</h4>
+                    <div class="text-center py-4">
+                        <div class="text-5xl font-bold text-green-600"><span id="ikkScore">0</span></div>
+                        <div class="text-sm text-gray-500 mt-2">Kategori: <span id="ikkCategory" class="font-semibold">-</span></div>
+                    </div>
+                    <div class="mt-4 p-3 bg-green-50 rounded text-sm text-gray-600">
+                        <p><strong>IKK</strong> mengukur kualitas keluarga berdasarkan aspek kesehatan, ekonomi, pendidikan, dan sosial.</p>
+                    </div>
+                </div>
+
+                <div class="card p-6 border-t-4 border-orange-500">
+                    <h4 class="font-bold text-center text-gray-700 mb-4">Kategori Keluarga</h4>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-3 bg-red-50 rounded">
+                            <span class="font-semibold text-gray-700">Pra Sejahtera</span>
+                            <span class="text-2xl font-bold text-red-600"><span id="praSejahtera">0</span></span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-orange-50 rounded">
+                            <span class="font-semibold text-gray-700">Sejahtera I</span>
+                            <span class="text-2xl font-bold text-orange-600"><span id="sejahtera1">0</span></span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-yellow-50 rounded">
+                            <span class="font-semibold text-gray-700">Sejahtera II</span>
+                            <span class="text-2xl font-bold text-yellow-600"><span id="sejahtera2">0</span></span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-green-50 rounded">
+                            <span class="font-semibold text-gray-700">Sejahtera III</span>
+                            <span class="text-2xl font-bold text-green-600"><span id="sejahtera3">0</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Indikator Khusus -->
+        <section id="indikator" class="mb-16 scroll-mt-24">
+            <div class="bg-gradient-to-r from-red-500 to-orange-500 text-white p-6 rounded-xl shadow-lg">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-2 h-10 bg-white rounded"></div>
+                    <h2 class="text-2xl font-bold">Indikator Khusus: Pencegahan Stunting</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-white/20 backdrop-blur-sm rounded-lg p-4">
+                        <div class="text-3xl font-bold"><span id="balitaStunting">0</span></div>
+                        <div class="text-sm">Balita Stunting</div>
+                    </div>
+                    <div class="bg-white/20 backdrop-blur-sm rounded-lg p-4">
+                        <div class="text-3xl font-bold"><span id="bumilKek">0</span></div>
+                        <div class="text-sm">Bumil KEK (Kurang Gizi)</div>
+                    </div>
+                    <div class="bg-white/20 backdrop-blur-sm rounded-lg p-4">
+                        <div class="text-3xl font-bold"><span id="badutaGiziBuruk">0</span></div>
+                        <div class="text-sm">Baduta Gizi Buruk</div>
+                    </div>
+                </div>
+
+                <div class="mt-6 p-4 bg-white/90 rounded-lg border border-red-200 text-gray-800">
+                    <p class="text-sm font-semibold text-red-700 mb-2">Target Penurunan Stunting 2024</p>
+                    <div class="w-full bg-gray-200 rounded-full h-4">
+                        <div id="stuntingBar" class="bg-red-500 h-4 rounded-full text-xs text-white text-center leading-4" style="width: 0%">
+                            Target <span id="targetStunting">18</span>%
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-600 mt-2">Kondisi saat ini: <span id="stuntingStatus">-</span></p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-gray-800 text-white py-6">
+        <div class="container mx-auto px-4 text-center">
+            <p class="font-bold mb-1">Rumah Data Kependudukan Desa Cumedak</p>
+            <p class="text-sm text-gray-400">Yunus Purwahadi, Penyuluh KB Kec. Sumberjambe; 2064</p>
+            <p class="text-xs text-gray-500 mt-2">Didukung oleh Dinkes PPKB Kabupaten Jember & Kemendukbangga/Perwakilan BKKBN Provinsi Jawa Timur</p>
+            <p class="text-xs text-gray-400 mt-3">Terakhir diperbarui: <span id="lastUpdate">-</span></p>
+        </div>
+    </footer>
+
+    <script>
+        // ========================================
+        // KONFIGURASI - GANTI URL INI!
+        // ========================================
+        const SPREADSHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxTqmyP8dC5oMJhw1TKKzMlDovMwp67_sBHRt57wdIlYVKjLv91Y9906vHF4I-5eA-Y/exec';
+        
+        // ========================================
+        // VARIABEL GLOBAL
+        // ========================================
+        let chartInstances = {};
+        
+        // ========================================
+        // FUNGSI UNTUK MENGAMBIL DATA DARI SPREADSHEET
+        // ========================================
+        async function fetchDataFromSpreadsheet() {
+            try {
+                const response = await fetch(SPREADSHEET_API_URL);
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                alert('Gagal mengambil data dari spreadsheet. Pastikan URL API sudah benar.');
+                return null;
+            }
+        }
+
+        // ========================================
+        // FUNGSI UNTUK UPDATE UI
+        // ========================================
+        function updateUI(data) {
+            // Update Summary Cards
+            document.getElementById('totalPenduduk').textContent = data.summary.totalPenduduk.toLocaleString('id-ID');
+            document.getElementById('totalKK').textContent = data.summary.totalKK.toLocaleString('id-ID');
+            document.getElementById('totalPUS').textContent = data.summary.totalPUS.toLocaleString('id-ID');
+            document.getElementById('totalStunting').textContent = data.summary.totalStunting.toLocaleString('id-ID');
+
+            // Update Gender Info
+            document.getElementById('lakiLaki').textContent = data.gender.lakiLaki.toLocaleString('id-ID');
+            document.getElementById('perempuan').textContent = data.gender.perempuan.toLocaleString('id-ID');
+
+            // Update Health Percentages
+            document.getElementById('bpjsPercent').textContent = data.health.bpjsPercent;
+            document.getElementById('disabilitasPercent').textContent = data.health.disabilitasPercent;
+            document.getElementById('k4Percent').textContent = data.health.k4Percent;
+
+            // Update KB Info
+            document.getElementById('totalAkseptorKB').textContent = data.kb.totalAkseptor.toLocaleString('id-ID');
+            document.getElementById('cakupanKBPercent').textContent = data.kb.cakupanPercent;
+            document.getElementById('totalPoktan').textContent = data.poktan.totalActive;
+
+            // Update IKK
+            document.getElementById('ikkScore').textContent = data.pembangunan.ikkScore;
+            document.getElementById('ikkCategory').textContent = data.pembangunan.ikkCategory;
+
+            // Update Kategori Keluarga
+            document.getElementById('praSejahtera').textContent = data.pembangunan.praSejahtera.toLocaleString('id-ID');
+            document.getElementById('sejahtera1').textContent = data.pembangunan.sejahtera1.toLocaleString('id-ID');
+            document.getElementById('sejahtera2').textContent = data.pembangunan.sejahtera2.toLocaleString('id-ID');
+            document.getElementById('sejahtera3').textContent = data.pembangunan.sejahtera3.toLocaleString('id-ID');
+
+            // Update Stunting
+            document.getElementById('balitaStunting').textContent = data.stunting.balitaStunting.toLocaleString('id-ID');
+            document.getElementById('bumilKek').textContent = data.stunting.bumilKek.toLocaleString('id-ID');
+            document.getElementById('badutaGiziBuruk').textContent = data.stunting.badutaGiziBuruk.toLocaleString('id-ID');
+            
+            const stuntingPercent = ((data.stunting.balitaStunting / data.summary.totalPenduduk) * 100).toFixed(1);
+            document.getElementById('stuntingBar').style.width = stuntingPercent + '%';
+            document.getElementById('targetStunting').textContent = data.stunting.targetPercent;
+            
+            const status = parseFloat(stuntingPercent) > data.stunting.targetPercent ? 
+                'Di atas target (Perlu ditingkatkan)' : 'Sudah mencapai target';
+            document.getElementById('stuntingStatus').textContent = status;
+
+            // Update Last Update
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleString('id-ID');
+        }
+
+        // ========================================
+        // FUNGSI UNTUK MEMBUAT CHARTS
+        // ========================================
+        Chart.register(ChartDataLabels);
+        Chart.defaults.font.family = "'Poppins', sans-serif";
+        Chart.defaults.color = '#4b5563';
+        
+        const commonOptions = {
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' },
+                datalabels: {
+                    color: '#fff',
+                    font: { weight: 'bold', size: 10 },
+                    formatter: (value) => value
+                }
+            }
+        };
+
+        function createCharts(data) {
+            // Destroy existing charts
+            Object.values(chartInstances).forEach(chart => chart.destroy());
+            chartInstances = {};
+
+            // 1. Gender Chart
+            chartInstances.gender = new Chart(document.getElementById('genderChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Laki-laki', 'Perempuan'],
+                    datasets: [{
+                        data: [data.gender.lakiLaki, data.gender.perempuan],
+                        backgroundColor: ['#3b82f6', '#ec4899'],
+                        hoverOffset: 10
+                    }]
+                },
+                options: commonOptions
+            });
+
+            // 2. Age Chart
+            chartInstances.age = new Chart(document.getElementById('ageChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.age.labels,
+                    datasets: [{
+                        label: 'Jumlah Jiwa',
+                        data: data.age.values,
+                        backgroundColor: '#FDB913',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: { 
+                            color: '#444', 
+                            anchor: 'end', 
+                            align: 'top',
+                            offset: -2
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { display: false } }
+                    }
+                }
+            });
+
+            // 3. Education Chart
+            chartInstances.edu = new Chart(document.getElementById('eduChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.education.labels,
+                    datasets: [{
+                        data: data.education.values,
+                        backgroundColor: ['#fcd34d', '#fbbf24', '#f59e0b', '#b45309', '#b45309', '#b45309']
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' },
+                        datalabels: { formatter: (value) => value }
+                    }
+                }
+            });
+
+            // 4. Job Chart
+            chartInstances.job = new Chart(document.getElementById('jobChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.jobs.labels,
+                    datasets: [{
+                        data: data.jobs.values,
+                        backgroundColor: ['#005EB8', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd']
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: { color: 'black', anchor: 'center', align: 'center' }
+                    }
+                }
+            });
+
+            // 5. KB Chart
+            chartInstances.kb = new Chart(document.getElementById('kbChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.kb.methods.labels,
+                    datasets: [{
+                        data: data.kb.methods.values,
+                        backgroundColor: ['#3b82f6', '#60a5fa', '#a855f7', '#ec4899', '#f59e0b', '#a855f7', '#a855f7', '#a855f7', '#a855f7']
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 12 } },
+                        datalabels: { color: 'black', anchor: 'center', align: 'center' }
+                    }
+                }
+            });
+
+            // 6. Poktan Chart
+            chartInstances.poktan = new Chart(document.getElementById('poktanChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.poktan.labels,
+                    datasets: [{
+                        label: 'Keaktifan Anggota',
+                        data: data.poktan.values,
+                        backgroundColor: ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe']
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: { color: '#555', anchor: 'end', align: 'center' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // ========================================
+        // INISIALISASI SAAT HALAMAN DIMUAT
+        // ========================================
+        async function init() {
+            const data = await fetchDataFromSpreadsheet();
+            
+            if (data) {
+                updateUI(data);
+                createCharts(data);
+                
+                // Hide loading overlay
+                document.getElementById('loadingOverlay').style.display = 'none';
+            } else {
+                document.getElementById('loadingOverlay').innerHTML = 
+                    '<div><p class="text-red-600 font-bold text-center">Gagal memuat data!</p><p class="text-sm text-gray-600 mt-2">Silakan periksa konfigurasi URL API</p></div>';
+            }
+        }
+
+        // Jalankan saat halaman dimuat
+        window.addEventListener('DOMContentLoaded', init);
+
+        // Auto refresh setiap 5 menit
+        setInterval(init, 300000);
+    </script>
+</body>
+</html>
